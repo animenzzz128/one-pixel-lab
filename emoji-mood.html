@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Emoji Mood Classifier — v1</title>
+<style>
+  body{font-family:sans-serif;max-width:480px;margin:40px auto;text-align:center}
+  input[type=range]{width:100%}
+  #label{font-size:2rem;margin-top:20px}
+</style>
+</head>
+<body>
+  <h1>Emoji Mood Classifier</h1>
+  <svg id="face" width="200" height="200" viewBox="0 0 200 200">
+    <circle cx="100" cy="100" r="90" fill="#ffd166" stroke="#333" stroke-width="3"/>
+    <circle cx="65" cy="90" r="8" fill="#333"/>
+    <circle cx="135" cy="90" r="8" fill="#333"/>
+    <line id="browL" x1="45" y1="65" x2="80" y2="65" stroke="#333" stroke-width="5"/>
+    <line id="browR" x1="120" y1="65" x2="155" y2="65" stroke="#333" stroke-width="5"/>
+    <path id="mouthPath" d="M 60 140 Q 100 140 140 140" stroke="#333" stroke-width="5" fill="none"/>
+  </svg>
+
+  <p>Eyebrow angle: <span id="browVal">0</span>°</p>
+  <input type="range" id="brow" min="-40" max="40" value="0">
+  <p>Mouth curve: <span id="mouthVal">0</span>°</p>
+  <input type="range" id="mouth" min="-40" max="40" value="0">
+
+  <div id="label">?</div>
+
+<script>
+const brow = document.getElementById('brow');
+const mouth = document.getElementById('mouth');
+const browVal = document.getElementById('browVal');
+const mouthVal = document.getElementById('mouthVal');
+const label = document.getElementById('label');
+const browL = document.getElementById('browL');
+const browR = document.getElementById('browR');
+const mouthPath = document.getElementById('mouthPath');
+
+function update(){
+  const b = Number(brow.value);
+  const m = Number(mouth.value);
+  browVal.textContent = b;
+  mouthVal.textContent = m;
+
+  // rotate eyebrows
+  const rad = -b * Math.PI/180 * 0.5;
+  browL.setAttribute('transform', `rotate(${-b*0.5} 62 65)`);
+  browR.setAttribute('transform', `rotate(${b*0.5} 137 65)`);
+
+  // curve mouth
+  const curve = 140 + m;
+  mouthPath.setAttribute('d', `M 60 140 Q 100 ${curve} 140 140`);
+
+  // classify: simple sum rule
+  const score = b + m;
+  if (score >= 0) {
+    label.textContent = 'Happy 🙂';
+  } else {
+    label.textContent = 'Grumpy 🙁';
+  }
+}
+
+brow.addEventListener('input', update);
+mouth.addEventListener('input', update);
+update();
+</script>
+</body>
+</html>
