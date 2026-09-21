@@ -2,32 +2,148 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Emoji Mood Classifier — v1</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Emoji Mood Classifier</title>
 <style>
-  body{font-family:sans-serif;max-width:480px;margin:40px auto;text-align:center}
+  :root{
+    --ink:#101114; --paper:#f4f1e8; --accent:#dbff4a; --orange:#ff6b35; --blue:#4f74ff; --muted:#77766f; --line:#c9c5b9;
+  }
+  *{box-sizing:border-box}
+  body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;max-width:760px;margin:0 auto;padding:24px 20px 60px;background:var(--paper);color:var(--ink)}
+  h1{font-size:1.6rem;margin-bottom:4px}
+  .sub{color:var(--muted);margin-top:0}
+  .layout{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start}
+  .panel{flex:1 1 280px;min-width:260px}
+  .card{border:2px solid var(--ink);border-radius:10px;padding:16px;background:#fff;margin-bottom:16px}
+  svg{display:block;margin:0 auto}
   input[type=range]{width:100%}
-  #label{font-size:2rem;margin-top:20px}
+  label{font-weight:600;font-size:.9rem}
+  .row{margin-bottom:18px}
+  #label{font-size:1.8rem;font-weight:800;text-align:center;margin:6px 0}
+  .bars{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+  .bar-row{display:grid;grid-template-columns:90px 1fr 60px;align-items:center;gap:8px;font-size:.85rem}
+  .bar-track{background:#eee;border:1px solid var(--line);height:14px;border-radius:7px;position:relative;overflow:hidden}
+  .bar-fill{position:absolute;top:0;bottom:0;background:var(--blue)}
+  .bar-fill.orange{background:var(--orange)}
+  .score-line{font-family:ui-monospace,SFMono-Regular,monospace;font-size:.85rem;color:var(--muted);margin-top:8px}
+  .note{background:#fff7d6;border:1px solid #e4d68a;border-radius:8px;padding:10px 12px;font-size:.88rem;margin-top:10px}
+  .examples{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+  .ex-btn{border:1px solid var(--line);border-radius:8px;background:#fafaf6;padding:8px 4px;font-size:.72rem;cursor:pointer;text-align:center}
+  .ex-btn.happy{border-color:var(--blue)}
+  .ex-btn.grumpy{border-color:var(--orange)}
+  .ex-btn:hover{background:#fff}
+  .footer-note{font-size:.8rem;color:var(--muted);margin-top:6px}
+  h2{font-size:1rem;margin:0 0 8px}
 </style>
 </head>
 <body>
   <h1>Emoji Mood Classifier</h1>
-  <svg id="face" width="200" height="200" viewBox="0 0 200 200">
-    <circle cx="100" cy="100" r="90" fill="#ffd166" stroke="#333" stroke-width="3"/>
-    <circle cx="65" cy="90" r="8" fill="#333"/>
-    <circle cx="135" cy="90" r="8" fill="#333"/>
-    <line id="browL" x1="45" y1="65" x2="80" y2="65" stroke="#333" stroke-width="5"/>
-    <line id="browR" x1="120" y1="65" x2="155" y2="65" stroke="#333" stroke-width="5"/>
-    <path id="mouthPath" d="M 60 140 Q 100 140 140 140" stroke="#333" stroke-width="5" fill="none"/>
-  </svg>
+  <p class="sub">Move the two sliders to build a face. The model — trained on 12 example faces — decides whether it looks happy or grumpy, and shows its work.</p>
 
-  <p>Eyebrow angle: <span id="browVal">0</span>°</p>
-  <input type="range" id="brow" min="-40" max="40" value="0">
-  <p>Mouth curve: <span id="mouthVal">0</span>°</p>
-  <input type="range" id="mouth" min="-40" max="40" value="0">
+  <div class="layout">
+    <div class="panel">
+      <div class="card">
+        <svg id="face" width="200" height="200" viewBox="0 0 200 200">
+          <circle cx="100" cy="100" r="90" fill="#ffd166" stroke="#101114" stroke-width="3"/>
+          <circle cx="65" cy="90" r="8" fill="#101114"/>
+          <circle cx="135" cy="90" r="8" fill="#101114"/>
+          <line id="browL" x1="45" y1="65" x2="80" y2="65" stroke="#101114" stroke-width="5" stroke-linecap="round"/>
+          <line id="browR" x1="120" y1="65" x2="155" y2="65" stroke="#101114" stroke-width="5" stroke-linecap="round"/>
+          <path id="mouthPath" d="M 60 140 Q 100 140 140 140" stroke="#101114" stroke-width="5" fill="none" stroke-linecap="round"/>
+        </svg>
+        <div id="label">?</div>
 
-  <div id="label">?</div>
+        <div class="row">
+          <label>Eyebrow angle: <span id="browVal">0</span>&deg;</label>
+          <input type="range" id="brow" min="-40" max="40" value="0">
+        </div>
+        <div class="row" style="margin-bottom:0">
+          <label>Mouth curve: <span id="mouthVal">0</span>&deg;</label>
+          <input type="range" id="mouth" min="-40" max="40" value="0">
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="card">
+        <h2>Why the model decided that</h2>
+        <div class="bars">
+          <div class="bar-row">
+            <span>Eyebrows</span>
+            <div class="bar-track"><div class="bar-fill" id="browBar"></div></div>
+            <span id="browContrib">0</span>
+          </div>
+          <div class="bar-row">
+            <span>Mouth</span>
+            <div class="bar-track"><div class="bar-fill orange" id="mouthBar"></div></div>
+            <span id="mouthContrib">0</span>
+          </div>
+        </div>
+        <div class="score-line" id="scoreLine"></div>
+        <div class="note" id="conflictNote" style="display:none"></div>
+      </div>
+
+      <div class="card">
+        <h2>Closest training example</h2>
+        <div id="nearest" style="font-size:.9rem"></div>
+      </div>
+
+      <div class="card">
+        <h2>Training data (12 example faces)</h2>
+        <div class="examples" id="examples"></div>
+        <p class="footer-note">Click any example to load it. <span id="mistakeNote"></span></p>
+      </div>
+    </div>
+  </div>
 
 <script>
+// ---- 1. training data ---------------------------------------------------
+// (eyebrow angle, mouth curve, true label) - 12 examples, echoing the 12
+// pixels in One Pixel ML. The last two share the exact same face (12, -5)
+// but were given opposite labels on purpose, like Stop 1's "one odd label"
+// pattern: no possible straight-line rule can get both right, so the model
+// is guaranteed to accept at least one mistake.
+const examples = [
+  {b: 30, m: 30, label: 'happy'},
+  {b: 25, m: 10, label: 'happy'},
+  {b: 10, m: 25, label: 'happy'},
+  {b: 5,  m: 30, label: 'happy'},
+  {b: -5, m: 15, label: 'happy'},
+  {b: -30, m: -30, label: 'grumpy'},
+  {b: -25, m: -10, label: 'grumpy'},
+  {b: -10, m: -25, label: 'grumpy'},
+  {b: 5,  m: -15, label: 'grumpy'},
+  {b: -15, m: 5,  label: 'grumpy'},
+  {b: 12, m: -5, label: 'happy'},   // contradiction pair: identical face,
+  {b: 12, m: -5, label: 'grumpy'}   // opposite labels -> forces a mistake
+];
+
+// ---- 2. train: sweep every direction + threshold, keep fewest mistakes --
+// This is the same idea as One Pixel ML's cutoff sweep, just in 2 dimensions:
+// instead of one number (brightness) we have two (eyebrow, mouth), so instead
+// of one cutoff we search a *direction* (how much to weigh each feature) and
+// a threshold along that direction.
+function trainModel(data){
+  let best = null;
+  for (let deg = 0; deg < 360; deg += 2){
+    const rad = deg * Math.PI / 180;
+    const w = [Math.cos(rad), Math.sin(rad)];
+    const scored = data.map(e => ({proj: e.b*w[0] + e.m*w[1], label: e.label}))
+                        .sort((a,b) => a.proj - b.proj);
+    const cand = [scored[0].proj - 1];
+    for (let i = 0; i < scored.length - 1; i++) cand.push((scored[i].proj + scored[i+1].proj)/2);
+    cand.push(scored[scored.length-1].proj + 1);
+    for (const t of cand){
+      let mistakes = 0;
+      for (const s of scored) if ((s.proj >= t ? 'happy':'grumpy') !== s.label) mistakes++;
+      if (!best || mistakes < best.mistakes) best = {mistakes, w, threshold: t, deg};
+    }
+  }
+  return best;
+}
+const model = trainModel(examples);
+
+// ---- 3. wire up the page -------------------------------------------------
 const brow = document.getElementById('brow');
 const mouth = document.getElementById('mouth');
 const browVal = document.getElementById('browVal');
@@ -36,33 +152,90 @@ const label = document.getElementById('label');
 const browL = document.getElementById('browL');
 const browR = document.getElementById('browR');
 const mouthPath = document.getElementById('mouthPath');
+const browBar = document.getElementById('browBar');
+const mouthBar = document.getElementById('mouthBar');
+const browContrib = document.getElementById('browContrib');
+const mouthContrib = document.getElementById('mouthContrib');
+const scoreLine = document.getElementById('scoreLine');
+const conflictNote = document.getElementById('conflictNote');
+const nearestEl = document.getElementById('nearest');
+
+function drawFace(b, m){
+  browL.setAttribute('transform', `rotate(${-b*0.5} 62 65)`);
+  browR.setAttribute('transform', `rotate(${b*0.5} 137 65)`);
+  const curve = 140 + m;
+  mouthPath.setAttribute('d', `M 60 140 Q 100 ${curve} 140 140`);
+}
+
+function widthPct(v, maxAbs){
+  return Math.min(100, Math.abs(v) / maxAbs * 100);
+}
 
 function update(){
   const b = Number(brow.value);
   const m = Number(mouth.value);
   browVal.textContent = b;
   mouthVal.textContent = m;
+  drawFace(b, m);
 
-  // rotate eyebrows
-  const rad = -b * Math.PI/180 * 0.5;
-  browL.setAttribute('transform', `rotate(${-b*0.5} 62 65)`);
-  browR.setAttribute('transform', `rotate(${b*0.5} 137 65)`);
+  const cb = b * model.w[0];   // eyebrow contribution
+  const cm = m * model.w[1];   // mouth contribution
+  const score = cb + cm;
+  const pred = score >= model.threshold ? 'happy' : 'grumpy';
+  label.textContent = pred === 'happy' ? 'Happy 🙂' : 'Grumpy 🙁';
 
-  // curve mouth
-  const curve = 140 + m;
-  mouthPath.setAttribute('d', `M 60 140 Q 100 ${curve} 140 140`);
+  const maxAbs = 40; // slider range
+  browBar.style.width = widthPct(cb, maxAbs) + '%';
+  browBar.style.left = cb >= 0 ? '50%' : (50 - widthPct(cb, maxAbs)) + '%';
+  mouthBar.style.width = widthPct(cm, maxAbs) + '%';
+  mouthBar.style.left = cm >= 0 ? '50%' : (50 - widthPct(cm, maxAbs)) + '%';
+  browContrib.textContent = cb.toFixed(1);
+  mouthContrib.textContent = cm.toFixed(1);
 
-  // classify: simple sum rule
-  const score = b + m;
-  if (score >= 0) {
-    label.textContent = 'Happy 🙂';
+  scoreLine.textContent =
+    `score = ${b}×${model.w[0].toFixed(2)} + ${m}×${model.w[1].toFixed(2)} = ${score.toFixed(1)}  ` +
+    `(needs ≥ ${model.threshold.toFixed(1)} to call it happy)`;
+
+  // "found a strange prediction" case: eyebrows and mouth disagree
+  const browSaysHappy = cb >= 0, mouthSaysHappy = cm >= 0;
+  if (browSaysHappy !== mouthSaysHappy){
+    const stronger = Math.abs(cb) >= Math.abs(cm) ? 'eyebrows' : 'mouth';
+    conflictNote.style.display = 'block';
+    conflictNote.textContent =
+      `Eyebrows and mouth disagree here — the ${stronger} matter more to this model, so that's what wins the tie.`;
   } else {
-    label.textContent = 'Grumpy 🙁';
+    conflictNote.style.display = 'none';
   }
+
+  // nearest training example (evidence #2: distance, not just weights)
+  let nearest = null, bestDist = Infinity;
+  for (const e of examples){
+    const d = Math.hypot(e.b - b, e.m - m);
+    if (d < bestDist){ bestDist = d; nearest = e; }
+  }
+  nearestEl.innerHTML =
+    `Eyebrows ${nearest.b}&deg;, mouth ${nearest.m}&deg; &rarr; <b>${nearest.label}</b> ` +
+    `<span style="color:var(--muted)">(distance ${bestDist.toFixed(1)})</span>`;
 }
 
 brow.addEventListener('input', update);
 mouth.addEventListener('input', update);
+
+// example gallery
+const exWrap = document.getElementById('examples');
+examples.forEach((e) => {
+  const btn = document.createElement('button');
+  btn.className = 'ex-btn ' + e.label;
+  btn.textContent = `${e.b}° / ${e.m}°`;
+  btn.title = e.label;
+  btn.addEventListener('click', () => {
+    brow.value = e.b; mouth.value = e.m; update();
+  });
+  exWrap.appendChild(btn);
+});
+document.getElementById('mistakeNote').textContent =
+  `This model accepts ${model.mistakes} mistake${model.mistakes===1?'':'s'} out of 12 — a single straight-line rule can't fit every example perfectly.`;
+
 update();
 </script>
 </body>
