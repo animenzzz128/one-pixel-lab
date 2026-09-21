@@ -19,7 +19,16 @@
   input[type=range]{width:100%}
   label{font-weight:600;font-size:.9rem}
   .row{margin-bottom:18px}
-  #label{font-size:1.8rem;font-weight:800;text-align:center;margin:6px 0}
+  #label{font-size:1.8rem;font-weight:800;text-align:center;margin:10px 0;padding:8px;border-radius:8px;transition:background .15s}
+  #label.happy{background:#e6ecff}
+  #label.grumpy{background:#ffe9dc}
+  .reset-btn{display:block;margin:10px auto 0;padding:8px 18px;border:2px solid var(--ink);border-radius:8px;background:#fff;font-weight:700;cursor:pointer}
+  .reset-btn:hover{background:var(--accent)}
+  @media (max-width: 620px){
+    .layout{flex-direction:column}
+    .examples{grid-template-columns:repeat(3,1fr)}
+    body{padding:16px 14px 40px}
+  }
   .bars{display:flex;flex-direction:column;gap:10px;margin-top:10px}
   .bar-row{display:grid;grid-template-columns:90px 1fr 60px;align-items:center;gap:8px;font-size:.85rem}
   .bar-track{background:#eee;border:1px solid var(--line);height:14px;border-radius:7px;position:relative;overflow:hidden}
@@ -61,6 +70,7 @@
           <label>Mouth curve: <span id="mouthVal">0</span>&deg;</label>
           <input type="range" id="mouth" min="-40" max="40" value="0">
         </div>
+        <button class="reset-btn" id="resetBtn" type="button">Reset to neutral</button>
       </div>
     </div>
 
@@ -183,6 +193,8 @@ function update(){
   const score = cb + cm;
   const pred = score >= model.threshold ? 'happy' : 'grumpy';
   label.textContent = pred === 'happy' ? 'Happy 🙂' : 'Grumpy 🙁';
+  label.classList.toggle('happy', pred === 'happy');
+  label.classList.toggle('grumpy', pred === 'grumpy');
 
   const maxAbs = 40; // slider range
   browBar.style.width = widthPct(cb, maxAbs) + '%';
@@ -220,6 +232,9 @@ function update(){
 
 brow.addEventListener('input', update);
 mouth.addEventListener('input', update);
+document.getElementById('resetBtn').addEventListener('click', () => {
+  brow.value = 0; mouth.value = 0; update();
+});
 
 // example gallery
 const exWrap = document.getElementById('examples');
